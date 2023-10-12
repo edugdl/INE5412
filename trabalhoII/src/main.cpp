@@ -19,19 +19,19 @@ int main(int argc, char const *argv[])
     vector<int> pages;
 
     int page;
-    int refs = -1;
-
+    int n_pages = 0;
     while (!feof(stdin))
     {
         scanf("%d",&page);
         pages.push_back(page);
-        refs++;
+        if (page > n_pages)
+            n_pages = page;
     }
+    pages.pop_back();
 
-    Algorithms *a = new Algorithms(pages, n_frames);
-
+    Algorithms *a = new Algorithms(pages, n_frames, n_pages);
     cout << n_frames << " quadros" << endl;
-    cout << refs << " refs" << endl;
+    cout << pages.size() << " refs" << endl;
     cout << "FIFO: " << a->fifo() << " PFs"<< endl;
     cout << "LRU: " << a->lru() << " PFs"<< endl;
     cout << "OPT: " << a->opt() << " PFs"<< endl;
