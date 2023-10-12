@@ -34,7 +34,7 @@ int main(int argc, char const *argv[])
     cout << refs << " refs" << endl;
     cout << "FIFO: " << a->fifo() << " PFs"<< endl;
     cout << "LRU: " << a->lru() << " PFs"<< endl;
-    cout << "LRU: " << a->opt() << " PFs"<< endl;
+    cout << "OPT: " << a->opt() << " PFs"<< endl;
     
     return 0;
 }

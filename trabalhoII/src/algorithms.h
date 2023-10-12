@@ -12,5 +12,6 @@ class Algorithms {
         int fifo();
         int lru();
         int opt();
+        int find_next_occurence(int page, vector<int> opt_pages);
 
 };
