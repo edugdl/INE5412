@@ -54,7 +54,7 @@ int Algorithms::lru() {
 
 
 //TODO
-int Algorithms::lru() {
+int Algorithms::opt() {
     // find next occurrence (from now on) of every page on frames
     // the page who got the most distant next occurrence will be substituted
     return 0;
