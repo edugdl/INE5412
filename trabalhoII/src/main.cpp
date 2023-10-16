@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
     }
     pages.pop_back();
 
-    Algorithms *a = new Algorithms(pages, n_frames, n_pages);
+    Algorithms *a = new Algorithms(pages, n_frames, n_pages+1);
     cout << n_frames << " quadros" << endl;
     cout << pages.size() << " refs" << endl;
     cout << "FIFO: " << a->fifo() << " PFs"<< endl;
