@@ -88,9 +88,17 @@ int Algorithms::opt() {
         if (!in_frame->at(current_opt_page)) {
             // Se todos os frames estiverem ocupados
             if ((int) frames->size() == this->n_frames) {
-                // Pega a próxima ocorrência da primeira página em frames ?????
+                /* 
+                Worst Ocurrence é a ocorrência que mais vai demorar para acontecer
+                (é a página que será retirada de frames)
+                -----------------------------------------------------
+                Pega a próxima ocorrência da primeira página em frames
+                e supõe que ela é a pior ocorrência 
+                */
                 int worst_occurrence = find_next_occurrence(i, all_occurrences->at(frames->at(0)));
                 int index_worst_occurrence = 0;
+                // Testa todas as outras páginas em frames para ver se alguém
+                // tem uma ocorrência pior (vai demorar mais para ser chamado)
                 for (int j = 1; j < (int) frames->size(); j++) {
                     int current_occurrence = find_next_occurrence(i, all_occurrences->at(frames->at(j)));
                     if (current_occurrence > worst_occurrence) {
@@ -98,6 +106,7 @@ int Algorithms::opt() {
                         index_worst_occurrence = j;
                     }
                 }
+                // Página com pior ocorrência deixa de estar mapeada na memória e é retirada da lista frames
                 in_frame->at(frames->at(index_worst_occurrence)) = 0;
                 frames->at(index_worst_occurrence) = current_opt_page;
             } else {
@@ -122,9 +131,13 @@ int Algorithms::opt() {
 
 // Retorna o instante da próxima ocorrência de uma página
 int Algorithms::find_next_occurrence(int i, vector<int>* occurrences) {
-    // int j = 0;
-    // Enquanto a lista de ocorrências não estiver vazia e 
-    // i for maior ou igual ao primeiro elemento da lista de ocorrências
+    /*
+    i - instante
+    Enquanto a lista de ocorrências não estiver vazia e 
+    i for maior ou igual ao primeiro elemento da lista de ocorrências
+    (indica que o instante atual vem depois do momento da ocorrência,
+    então deve ser descartada)
+    */
     while (occurrences->size() && occurrences->at(0) <= i)
     {
         // Retira o primeiro elemento

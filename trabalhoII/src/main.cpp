@@ -18,6 +18,7 @@ int main(int argc, char const *argv[])
     int n_frames = atoi(argv[1]);
     vector<int> pages;
 
+    // Pages recebe todas as ocorrências das páginas
     int page;
     int n_pages = 0;
     while (!feof(stdin))
@@ -27,6 +28,7 @@ int main(int argc, char const *argv[])
         if (page > n_pages)
             n_pages = page;
     }
+    // Retira a linha em branco
     pages.pop_back();
 
     Algorithms *a = new Algorithms(pages, n_frames, n_pages+1);
