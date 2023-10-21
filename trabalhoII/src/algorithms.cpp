@@ -6,7 +6,7 @@
 using namespace std;
 
 // Construtor
-Algorithms::Algorithms(vector<int> pages_, int n_frames_, int n_pages_){
+Algorithms::Algorithms(vector<int>* pages_, int n_frames_, int n_pages_){
     // Vetor de requisições das páginas
     this->pages = pages_;
     // Número de frames
@@ -19,13 +19,13 @@ Algorithms::Algorithms(vector<int> pages_, int n_frames_, int n_pages_){
 Algorithms::~Algorithms(){}
 
 int Algorithms::fifo() {
-    vector<int> fifo_pages = this->pages;
+    vector<int>* fifo_pages = this->pages;
     queue<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     vector<int> in_frame(this->n_pages, 0);
     int page_faults = 0;
-    
-    for (int page : fifo_pages) {
+    for (int i = 0; i < (int) fifo_pages->size(); i++) {
+        int page = fifo_pages->at(i);
         if (not in_frame[page]){
             // Se todos os frames estiverem ocupados
             if ((int) frames.size() == this->n_frames) {
@@ -44,13 +44,14 @@ int Algorithms::fifo() {
 }
 
 int Algorithms::lru() {
-    vector<int> lru_pages = this->pages;    
+    vector<int>* lru_pages = this->pages;    
     list<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     vector<int> in_frame(this->n_pages, 0);
     int page_faults = 0;
     
-    for (int page : lru_pages) {
+    for (int i = 0; i < (int) lru_pages->size(); i++) {
+        int page = lru_pages->at(i);
         if (not in_frame[page]){
             // Se todos os frames estiverem ocupados
             if ((int) frames.size() == this->n_frames) {
@@ -73,7 +74,7 @@ int Algorithms::lru() {
 
 
 int Algorithms::opt() {
-    vector<int>* opt_pages = &this->pages;
+    vector<int>* opt_pages = this->pages;
     vector<int>* frames = new vector<int>;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     vector<int>* in_frame = new vector<int>(this->n_pages+1, 0);
@@ -117,7 +118,6 @@ int Algorithms::opt() {
         }
     }
     
-    delete opt_pages;
     delete frames;
     delete in_frame;
 
@@ -144,7 +144,7 @@ int Algorithms::find_next_occurrence(int i, vector<int>* occurrences) {
         occurrences->erase(occurrences->begin());
     }
     if (occurrences->size()) return occurrences->at(0);
-    return (int) this->pages.size();
+    return (int) this->pages->size();
 }
 
 // Retorna matriz de ocorrências
