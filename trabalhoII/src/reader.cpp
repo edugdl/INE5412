@@ -31,5 +31,5 @@ vector<int>* Reader::get_pages(){
 }
 
 int Reader::get_n_pages(){
-    return this->n_pages;
+    return this->n_pages + 1;
 }

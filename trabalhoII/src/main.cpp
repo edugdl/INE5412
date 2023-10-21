@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     Reader* r = new Reader();
     r->read_file(n_frames);
 
-    Algorithms *a = new Algorithms(r->get_pages(), n_frames, r->get_n_pages()+1);
+    Algorithms *a = new Algorithms(r->get_pages(), n_frames, r->get_n_pages());
     cout << n_frames << " quadros" << endl;
     cout << r->get_pages()->size() << " refs" << endl;
     cout << "FIFO: " << a->fifo() << " PFs"<< endl;
