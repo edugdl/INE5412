@@ -19,10 +19,10 @@ void Reader::read_file(int n_frames) {
     // Enquanto não for o fim do arquivo ou ler um não inteiro, le a ocorrência da página
     while (!feof(stdin) && scanf("%d", &page) == 1) {
         // Adiciona a página a lista
-        pages->push_back(page);
+        this->pages->push_back(page);
         // Define a quantidade de páginas pelo valor da maior
         if (page > n_pages)
-            n_pages = page;
+            this->n_pages = page;
     }
 }
 
