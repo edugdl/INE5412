@@ -28,5 +28,8 @@ int main(int argc, char const *argv[])
     cout << "LRU: " << a->lru() << " PFs"<< endl;
     cout << "OPT: " << a->opt() << " PFs"<< endl;
     
+    delete a;
+    delete r;
+
     return 0;
 }
