@@ -3,7 +3,9 @@
 
 // Construtor
 Reader::Reader() {
+    // Vetor de requisições das páginas
     this->pages = new vector<int>;
+    // Número de páginas
     this->n_pages = 0;
 }
 
@@ -13,9 +15,7 @@ Reader::~Reader() {
 
 // Le o arquivo
 void Reader::read_file(int n_frames) {
-    // Pages recebe todas as ocorrências das páginas
     int page;
-
     // Enquanto não for o fim do arquivo ou ler um não inteiro, le a ocorrência da página
     while (!feof(stdin) && scanf("%d", &page) == 1) {
         // Adiciona a página a lista
