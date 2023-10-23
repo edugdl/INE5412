@@ -18,7 +18,9 @@ Algorithms::Algorithms(vector<int>* pages_, int n_frames_, int n_pages_){
 Algorithms::~Algorithms(){}
 
 int Algorithms::fifo() {
+    // Vetor das ocorrências
     vector<int>* fifo_pages = this->pages;
+    // Vetor dos frames
     queue<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     vector<int> in_frame(this->n_pages, 0);
@@ -26,7 +28,8 @@ int Algorithms::fifo() {
     int page;
     for (int i = 0; i < (int) fifo_pages->size(); i++) {
         page = fifo_pages->at(i);
-        if (not in_frame[page]){
+        // Se não está nos frames
+        if (!in_frame[page]){
             // Se todos os frames estiverem ocupados
             if ((int) frames.size() == this->n_frames) {
                 // Página no início da fila deixa de estar mapeada na memória e é retirada da lista frames
@@ -44,7 +47,9 @@ int Algorithms::fifo() {
 }
 
 int Algorithms::lru() {
-    vector<int>* lru_pages = this->pages;    
+    // Vetor das ocorrências
+    vector<int>* lru_pages = this->pages;
+    // Vetor dos frames
     list<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     vector<int> in_frame(this->n_pages, 0);
@@ -53,7 +58,8 @@ int Algorithms::lru() {
     
     for (int i = 0; i < (int) lru_pages->size(); i++) {
         page = lru_pages->at(i);
-        if (not in_frame[page]){
+        // Se não está nos frames
+        if (!in_frame[page]){
             // Se todos os frames estiverem ocupados
             if ((int) frames.size() == this->n_frames) {
                 // Página no início da fila deixa de estar mapeada na memória e é retirada da lista frames
@@ -75,18 +81,20 @@ int Algorithms::lru() {
 
 
 int Algorithms::opt() {
+    // Vetor das ocorrências
     vector<int>* opt_pages = this->pages;
+    // Vetor dos frames
     vector<int> frames(this->n_frames);
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
-    // vector<int>* in_frame = new vector<int>(this->n_pages+1, 0);
     vector<int> in_frame(this->n_pages + 1, 0);
     int page_faults = 0;
     // Matriz de ocorrências
     vector<queue<int>*>* all_occurrences = get_all_occurrences(opt_pages);
+    // ocorrência verificada
+    queue<int>* current_occurrences;
     int worst_occurrence;
     int index_worst_occurrence;
     int current_occurrence;
-    queue<int>* current_occurrences;
     int current_opt_page;
     int used_frames = 0;
     // Percorre todas as ocorrências (opt_pages)
@@ -101,11 +109,9 @@ int Algorithms::opt() {
                 Worst Ocurrence é a ocorrência que mais vai demorar para acontecer
                 (é a página que será retirada de frames)
                 -----------------------------------------------------
-                Pega a próxima ocorrência da primeira página em frames
-                e supõe que ela é a pior ocorrência 
+                Testa todas as páginas presentes nos frames, verificando qual
+                vai demorar mais para ser chamada
                 */
-                // Testa todas as outras páginas em frames para ver se alguém
-                // tem uma ocorrência pior (vai demorar mais para ser chamado)
                 for (int j = 0; j < used_frames; j++) {
                     current_occurrences = all_occurrences->at(frames[j]);
                     if (current_occurrences->size()) {
@@ -123,14 +129,15 @@ int Algorithms::opt() {
                 in_frame[frames[index_worst_occurrence]] = 0;
                 frames[index_worst_occurrence] = current_opt_page;
             } else {
+                // Insere na lista de frames
                 used_frames++;
                 frames.push_back(current_opt_page);
             }
             in_frame[current_opt_page] = 1;
             page_faults++;
         }
-        current_occurrences = all_occurrences->at(current_opt_page);
-        current_occurrences->pop();
+        // Retira a ocorrência atual da lista respectiva da página
+        all_occurrences->at(current_opt_page)->pop();
     }
     
     for (int i = 0; i < this->n_pages; i++) {
