@@ -85,10 +85,11 @@ int Algorithms::opt() {
     int index_worst_occurrence;
     int current_occurrence;
     queue<int>* current_occurrences;
+    int current_opt_page;
     // Percorre todas as ocorrências (opt_pages)
     for (int i = 0; i < (int) opt_pages->size(); i++) {
         worst_occurrence = -1;
-        int current_opt_page = opt_pages->at(i);
+        current_opt_page = opt_pages->at(i);
         // Se a página atual não estiver mapeada para a memória
         if (!in_frame->at(current_opt_page)) {
             // Se todos os frames estiverem ocupados
@@ -149,13 +150,7 @@ vector<queue<int>*>* Algorithms::get_all_occurrences(vector<int>* opt_pages) {
     
 
     for (int i = 0; i < (int) opt_pages->size(); i++) {
-        // Pega a página localizada na posição i (requisitada no instante i)
-        // int current_page = opt_pages->at(i);
-        // if (!all_occurrences->at(current_page))
-        //     all_occurrences->at(current_page) = new deque<int>;
-        // Coloca o instante no vetor correspondente a página requisitada
         all_occurrences->at(opt_pages->at(i))->push(i);
-
     }
     return all_occurrences;
 }
