@@ -23,7 +23,8 @@ int Algorithms::fifo() {
     // Vetor dos frames
     queue<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
-    vector<int> in_frame(this->n_pages, 0);
+    int in_frame[this->n_pages];
+    fill(in_frame, in_frame + this->n_pages, 0);
     int page_faults = 0;
     int page;
     for (int i = 0; i < (int) fifo_pages->size(); i++) {
@@ -52,7 +53,8 @@ int Algorithms::lru() {
     // Vetor dos frames
     list<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
-    vector<int> in_frame(this->n_pages, 0);
+    int in_frame[this->n_pages];
+    fill(in_frame, in_frame + this->n_pages, 0);
     int page_faults = 0;
     int page;
     
@@ -84,14 +86,15 @@ int Algorithms::opt() {
     // Vetor das ocorrências
     vector<int>* opt_pages = this->pages;
     // Vetor dos frames
-    vector<int> frames(this->n_frames);
+    int frames[this->n_frames];
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
-    vector<int> in_frame(this->n_pages + 1, 0);
-    int page_faults = 0;
+    int in_frame[this->n_pages];
+    fill(in_frame, in_frame + this->n_pages, 0);
     // Matriz de ocorrências
     vector<queue<int>*>* all_occurrences = get_all_occurrences(opt_pages);
     // ocorrência verificada
     queue<int>* current_occurrences;
+    int page_faults = 0;
     int worst_occurrence;
     int index_worst_occurrence;
     int current_occurrence;
@@ -130,8 +133,8 @@ int Algorithms::opt() {
                 frames[index_worst_occurrence] = current_opt_page;
             } else {
                 // Insere na lista de frames
+                frames[used_frames] = current_opt_page;
                 used_frames++;
-                frames.push_back(current_opt_page);
             }
             in_frame[current_opt_page] = 1;
             page_faults++;
