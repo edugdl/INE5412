@@ -1,4 +1,5 @@
 #include <vector>
+#include <deque>
 
 using namespace std;
 
@@ -13,7 +14,6 @@ class Algorithms {
         int fifo();
         int lru();
         int opt();
-        int find_next_occurrence(int page, vector<int>* opt_pages);
-        vector<vector<int>*>* get_all_occurrences(vector<int>* opt_pages);
+        deque<deque<int>*>* get_all_occurrences(vector<int>* opt_pages);
 
 };
