@@ -5,7 +5,7 @@ using namespace std;
 
 class Algorithms {
     private:
-        vector<int>* pages;
+        vector<int>* page_references;
         int n_frames;
         int n_pages;
     public:
@@ -14,5 +14,5 @@ class Algorithms {
         int fifo();
         int lru();
         int opt();
-        vector<queue<int>*>* get_all_occurrences(vector<int>* opt_pages);
+        vector<queue<int>*>* get_all_occurrences(vector<int>* opt_page_references);
 };

@@ -7,7 +7,7 @@ using namespace std;
 // Construtor
 Algorithms::Algorithms(vector<int>* pages_, int n_frames_, int n_pages_){
     // Vetor de requisições das páginas
-    this->pages = pages_;
+    this->page_references = pages_;
     // Número de frames
     this->n_frames = n_frames_;
     // Número de páginas
@@ -19,7 +19,7 @@ Algorithms::~Algorithms(){}
 
 int Algorithms::fifo() {
     // Vetor das ocorrências
-    vector<int>* fifo_pages = this->pages;
+    vector<int>* fifo_page_references = this->page_references;
     // Vetor dos frames
     queue<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
@@ -27,8 +27,8 @@ int Algorithms::fifo() {
     fill(in_frame, in_frame + this->n_pages, 0);
     int page_faults = 0;
     int page;
-    for (int i = 0; i < (int) fifo_pages->size(); i++) {
-        page = fifo_pages->at(i);
+    for (int i = 0; i < (int) fifo_page_references->size(); i++) {
+        page = fifo_page_references->at(i);
         // Se não está nos frames
         if (!in_frame[page]){
             // Se todos os frames estiverem ocupados
@@ -49,7 +49,7 @@ int Algorithms::fifo() {
 
 int Algorithms::lru() {
     // Vetor das ocorrências
-    vector<int>* lru_pages = this->pages;
+    vector<int>* lru_page_references  = this->page_references;
     // Vetor dos frames
     list<int> frames;
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
@@ -58,40 +58,40 @@ int Algorithms::lru() {
     int page_faults = 0;
     int page;
     
-    for (int i = 0; i < (int) lru_pages->size(); i++) {
-        page = lru_pages->at(i);
+    for (int i = 0; i < (int) lru_page_references->size(); i++) {
         // Se não está nos frames
         if (!in_frame[page]){
             // Se todos os frames estiverem ocupados
             if ((int) frames.size() == this->n_frames) {
-                // Página no início da fila deixa de estar mapeada na memória e é retirada da lista frames
-                in_frame[frames.front()] = 0;
-                frames.pop_front();
+                // Página no fim da fila deixa de estar mapeada na memória e é retirada da lista frames
+                in_frame[frames.back()] = 0;
+                frames.pop_back();
             }
-            // Nova página é inserida no final da lista frames
-            frames.push_back(page);
+            // Nova página é inserida no início da lista frames
+            frames.push_front(page);
             in_frame[page] = 1;
             page_faults++;
         } else {
-            // Caso já esteja mapeada, passa para o fim da lista
+            // Caso já esteja mapeada, passa para o início da lista
             frames.remove(page);
-            frames.push_back(page);
+            frames.push_front(page);
         }
     }
+    return page_faults;
     return page_faults;
 }
 
 
 int Algorithms::opt() {
     // Vetor das ocorrências
-    vector<int>* opt_pages = this->pages;
+    vector<int>* opt_page_references = this->page_references;
     // Vetor dos frames
     int frames[this->n_frames];
     // Vetor para saber se uma página está mapeada na memória (0: Não || 1: Sim)
     int in_frame[this->n_pages];
     fill(in_frame, in_frame + this->n_pages, 0);
     // Matriz de ocorrências
-    vector<queue<int>*>* all_occurrences = get_all_occurrences(opt_pages);
+    vector<queue<int>*>* all_occurrences = get_all_occurrences(opt_page_references);
     // ocorrência verificada
     queue<int>* current_occurrences;
     int page_faults = 0;
@@ -100,10 +100,10 @@ int Algorithms::opt() {
     int current_occurrence;
     int current_opt_page;
     int used_frames = 0;
-    // Percorre todas as ocorrências (opt_pages)
-    for (int i = 0; i < (int) opt_pages->size(); i++) {
+    // Percorre todas as ocorrências (opt_page_references)
+    for (int i = 0; i < (int) opt_page_references->size(); i++) {
         worst_occurrence = -1;
-        current_opt_page = opt_pages->at(i);
+        current_opt_page = opt_page_references->at(i);
         // Se a página atual não estiver mapeada para a memória
         if (!in_frame[current_opt_page]) {
             // Se todos os frames estiverem ocupados
@@ -154,14 +154,14 @@ int Algorithms::opt() {
 // Retorna matriz de ocorrências
 // Cada linha na matriz (índice) representa o ID de uma página
 // Os valores nessa linha (vetor) indicam os instantes em que essa página é requisitada
-vector<queue<int>*>* Algorithms::get_all_occurrences(vector<int>* opt_pages) {
+vector<queue<int>*>* Algorithms::get_all_occurrences(vector<int>* opt_page_references) {
     vector<queue<int>*>* all_occurrences = new vector<queue<int>*>(this->n_pages + 1);
     for (int j = 0; j < this->n_pages; j++)
         all_occurrences->at(j) = new queue<int>;
     
 
-    for (int i = 0; i < (int) opt_pages->size(); i++) {
-        all_occurrences->at(opt_pages->at(i))->push(i);
+    for (int i = 0; i < (int) opt_page_references->size(); i++) {
+        all_occurrences->at(opt_page_references->at(i))->push(i);
     }
     return all_occurrences;
 }
