@@ -80,11 +80,11 @@ int Algorithms::opt() {
     vector<int>* in_frame = new vector<int>(this->n_pages+1, 0);
     int page_faults = 0;
     // Matriz de ocorrências
-    deque<deque<int>*>* all_occurrences = get_all_occurrences(opt_pages);
+    vector<queue<int>*>* all_occurrences = get_all_occurrences(opt_pages);
     int worst_occurrence;
     int index_worst_occurrence;
     int current_occurrence;
-    deque<int>* current_occurrences;
+    queue<int>* current_occurrences;
     // Percorre todas as ocorrências (opt_pages)
     for (int i = 0; i < (int) opt_pages->size(); i++) {
         worst_occurrence = -1;
@@ -105,7 +105,7 @@ int Algorithms::opt() {
                 for (int j = 0; j < (int) frames->size(); j++) {
                     current_occurrences = all_occurrences->at(frames->at(j));
                     if (current_occurrences->size()) {
-                        current_occurrence = all_occurrences->at(frames->at(j))->at(0);
+                        current_occurrence = all_occurrences->at(frames->at(j))->front();
                         if (current_occurrence > worst_occurrence) {
                             worst_occurrence = current_occurrence;
                             index_worst_occurrence = j;
@@ -124,8 +124,8 @@ int Algorithms::opt() {
             in_frame->at(current_opt_page) = 1;
             page_faults++;
         }
-        deque<int>* current_occurrences = all_occurrences->at(current_opt_page);
-        current_occurrences->pop_front();
+        current_occurrences = all_occurrences->at(current_opt_page);
+        current_occurrences->pop();
     }
     
     delete frames;
@@ -142,16 +142,19 @@ int Algorithms::opt() {
 // Retorna matriz de ocorrências
 // Cada linha na matriz (índice) representa o ID de uma página
 // Os valores nessa linha (vetor) indicam os instantes em que essa página é requisitada
-deque<deque<int>*>* Algorithms::get_all_occurrences(vector<int>* opt_pages) {
-    deque<deque<int>*>* all_occurrences = new deque<deque<int>*>(this->n_pages + 1);
+vector<queue<int>*>* Algorithms::get_all_occurrences(vector<int>* opt_pages) {
+    vector<queue<int>*>* all_occurrences = new vector<queue<int>*>(this->n_pages + 1);
+    for (int j = 0; j < this->n_pages; j++)
+        all_occurrences->at(j) = new queue<int>;
+    
 
     for (int i = 0; i < (int) opt_pages->size(); i++) {
         // Pega a página localizada na posição i (requisitada no instante i)
-        int current_page = opt_pages->at(i);
-        if (!all_occurrences->at(current_page))
-            all_occurrences->at(current_page) = new deque<int>;
+        // int current_page = opt_pages->at(i);
+        // if (!all_occurrences->at(current_page))
+        //     all_occurrences->at(current_page) = new deque<int>;
         // Coloca o instante no vetor correspondente a página requisitada
-        all_occurrences->at(current_page)->push_back(i);
+        all_occurrences->at(opt_pages->at(i))->push(i);
 
     }
     return all_occurrences;
