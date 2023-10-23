@@ -59,6 +59,7 @@ int Algorithms::lru() {
     int page;
     
     for (int i = 0; i < (int) lru_page_references->size(); i++) {
+        page = lru_page_references->at(i);
         // Se não está nos frames
         if (!in_frame[page]){
             // Se todos os frames estiverem ocupados
