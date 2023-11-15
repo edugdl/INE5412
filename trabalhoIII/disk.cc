@@ -3,7 +3,7 @@
 
 Disk::Disk(const char *filename, int n)
 {
-	diskfile = fopen(filename, "r+");
+	diskfile = fopen(filename, "w+");
 
 	if(!diskfile) 
 		diskfile = fopen(filename, "w+");
