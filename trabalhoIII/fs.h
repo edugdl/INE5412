@@ -57,6 +57,7 @@ public:
     int  fs_read(int inumber, char *data, int length, int offset);
     int  fs_write(int inumber, const char *data, int length, int offset);
 
+
 private:
     Disk *disk;
 };
