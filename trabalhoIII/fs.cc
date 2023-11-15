@@ -16,6 +16,32 @@ void INE5412_FS::fs_debug()
  	cout << "    " << block.super.nblocks << " blocks\n";
 	cout << "    " << block.super.ninodeblocks << " inode blocks\n";
 	cout << "    " << block.super.ninodes << " inodes\n";
+
+	union fs_block inode_block;
+	union fs_block pointer_block;
+
+	for (int i = 1; i <= block.super.ninodeblocks; i++) {
+		disk->read(i, inode_block.data);
+		for (int j = 0; j < INODES_PER_BLOCK; j++) {
+			fs_inode current_inode = inode_block.inode[j];
+			if (current_inode.isvalid) {
+				cout << "inode " << (i-1)*INODES_PER_BLOCK + j<< ":\n";
+				cout << "    " << "size: " << current_inode.size << " bytes\n";
+				cout << "    " << "direct blocks:";
+				for (int direct_block : current_inode.direct)
+					if (direct_block) cout <<  " " << direct_block;
+				cout << "\n";
+				if (current_inode.indirect) {
+					cout << "    " << "indirect block: " << current_inode.indirect << "\n";
+					cout << "    " << "indirect data blocks:";
+					disk->read(current_inode.indirect, pointer_block.data);
+					for (int pointer : pointer_block.pointers)
+						if (pointer) cout << " " << pointer;
+					cout << "\n";
+				}
+			}
+		}
+	}
 }
 
 int INE5412_FS::fs_mount()
