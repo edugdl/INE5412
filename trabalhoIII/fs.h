@@ -10,6 +10,7 @@ public:
     static const unsigned short int INODES_PER_BLOCK = 128;
     static const unsigned short int POINTERS_PER_INODE = 5;
     static const unsigned short int POINTERS_PER_BLOCK = 1024;
+    int* bitmap = nullptr;
 
     class fs_superblock {
         public:
@@ -41,6 +42,10 @@ public:
         disk = d;
     } 
 
+    ~INE5412_FS() {
+        delete bitmap;
+    }
+
     void fs_debug();
     int  fs_format();
     int  fs_mount();
@@ -51,6 +56,7 @@ public:
 
     int  fs_read(int inumber, char *data, int length, int offset);
     int  fs_write(int inumber, const char *data, int length, int offset);
+
 
 private:
     Disk *disk;
