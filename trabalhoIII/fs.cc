@@ -14,8 +14,8 @@ int INE5412_FS::fs_format()
 	}
 
 	block.super.magic = FS_MAGIC;
-	block.super.nblocks = 0;
-	block.super.ninodeblocks = 0;
+	block.super.nblocks = disk->DISK_BLOCK_SIZE;
+	block.super.ninodeblocks = disk->DISK_BLOCK_SIZE/10;
 	block.super.ninodes = 0;
 
 	disk->write(0, block.data);
@@ -64,7 +64,13 @@ void INE5412_FS::fs_debug()
 
 int INE5412_FS::fs_mount()
 {
-	return 0;
+	fs_block super_block;
+
+	disk->read(0, super_block.data);
+
+	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
+
+	return 1;
 }
 
 int INE5412_FS::fs_create()
