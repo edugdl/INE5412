@@ -1,4 +1,5 @@
 #include "fs.h"
+#include "math.h"
 
 int INE5412_FS::fs_format()
 {
@@ -14,8 +15,8 @@ int INE5412_FS::fs_format()
 	}
 
 	block.super.magic = FS_MAGIC;
-	block.super.nblocks = disk->DISK_BLOCK_SIZE;
-	block.super.ninodeblocks = disk->DISK_BLOCK_SIZE/10;
+	block.super.nblocks = disk->size();
+	block.super.ninodeblocks = ceil(disk->size()/10);
 	block.super.ninodes = 0;
 
 	disk->write(0, block.data);
@@ -75,6 +76,26 @@ int INE5412_FS::fs_mount()
 
 int INE5412_FS::fs_create()
 {
+	fs_block super_block;
+	fs_block inode_block;
+
+	disk->read(0, super_block.data);
+	for (int i = 1; super_block.super.ninodeblocks; i++) {
+		disk->read(i, inode_block.data);
+		for (int j = 0; j < INODES_PER_BLOCK; j++) {
+			if (i == 1 and !j) continue;
+			if (!inode_block.inode[j].isvalid) {
+				inode_block.inode[j].isvalid = 1;
+				for (int k = 0; k < POINTERS_PER_INODE; k++) inode_block.inode[j].direct[k] = 0; 
+				inode_block.inode[j].indirect = 0;
+				inode_block.inode[j].size = 0;
+				disk->write(i, inode_block.data);
+				super_block.super.ninodes += 1;
+				disk->write(0, super_block.data);
+				return (i-1)*INODES_PER_BLOCK + j;
+			}
+		}
+	}
 	return 0;
 }
 
