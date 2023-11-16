@@ -101,7 +101,53 @@ int INE5412_FS::fs_create()
 
 int INE5412_FS::fs_delete(int inumber)
 {
-	return 0;
+	fs_block super_block;
+	disk->read(0, super_block.data);
+
+	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*super_block.super.ninodeblocks) return 0;
+
+	fs_block inode_block;
+	fs_block indirect_block;
+	fs_block block;
+	
+	int n_inode_block = inumber / (INODES_PER_BLOCK-1);
+	int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
+	
+	disk->read(1 + n_inode_block, inode_block.data);
+	fs_inode *inode = &inode_block.inode[inumber_in_inode_block];
+	
+	if (!inode->isvalid) return 0;
+
+	for (int i = 0; i < POINTERS_PER_INODE; i++) {
+		if (inode->direct[i]) {
+			disk->read(inode->direct[i], block.data);
+			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
+			disk->write(indirect_block.pointers[i], block.data);
+			// bitmap[inode->direct[i] - super_block.super.ninodeblocks - 1] = 0;
+		}
+		inode->direct[i] = 0;
+	}
+
+	inode->isvalid = 0;
+	inode->size = 0;
+	
+	if (inode->indirect) {
+		disk->read(inode->indirect, indirect_block.data);
+		for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
+			if (indirect_block.pointers[i]) {
+				disk->read(indirect_block.pointers[i], block.data);
+				for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
+				disk->write(indirect_block.pointers[i], block.data);
+				// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
+			}
+		}
+	}
+
+	inode->indirect = 0;
+	disk->write(1 + n_inode_block, inode_block.data);
+	super_block.super.ninodes -= 1;
+	disk->write(0, super_block.data);
+	return 1;
 }
 
 int INE5412_FS::fs_getsize(int inumber)
