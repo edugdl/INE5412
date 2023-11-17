@@ -12,22 +12,41 @@ public:
     static const unsigned short int POINTERS_PER_BLOCK = 1024;
     int* bitmap = nullptr;
 
+    // Superblock (descreve o layout do resto do sistema de arquivos)
+    // Cada campo do superblock é um inteiro de 4 bytes
     class fs_superblock {
         public:
+            // Número mágico: assinatura do sistema de arquivos
             unsigned int magic;
+            // Número total de blocos (igual ao número de blocos no disco)
             int nblocks;
+            // Número de blocos que armazenam Inodes
+            // ninodeblocks = 10% de nblocks
             int ninodeblocks;
+            // Número total de inodos nos Inode Blocks
             int ninodes;
     }; 
 
+    // Inode block
+    // Cada campo de inodo tem 4 bytes
     class fs_inode {
         public:
+            // 1 se o inodo é válido (foi criado), 0 caso inválido
             int isvalid;
+            // Tamanho do inodo em bytes
             int size;
+            // 5 ponteiros diretos para blocos de dados [ponteiro = número de um bloco que possui dados]
             int direct[POINTERS_PER_INODE];
+            // Ponteiro para bloco indireto de dados
             int indirect;
+            // 0 = ponteiro de bloco nulo
+            // Cada inodo ocupa 32 bytes - 128 inodos por bloco de inodo de 4KB
+            // Cada ponteiro é um inteiro de 4 bytes
+            // 1024 ponteiros por bloco
     };
 
+    // Data block
+    // TODO adicionar especificações
     union fs_block {
         public:
             fs_superblock super;
@@ -46,15 +65,21 @@ public:
         delete bitmap;
     }
 
+    // Varre o sistema de arquivos montado e reporta como os inodos e blocos estão organizados
     void fs_debug();
+    // Cria um novo FS no disco e apaga todos os dados presentes
     int  fs_format();
+    // Examina o disco para um FS (se um está presente, lê o superblock, cria bitmap, e prepara o FS para uso)
     int  fs_mount();
-
+    // Cria um novo inodo de comprimento 0 (retorna inúmero positivo em caso de sucesso, 0 caso contrário)
     int  fs_create();
+    // Deleta o inodo
     int  fs_delete(int inumber);
+    // Retorna o tamanho do do inodo em bytes
     int  fs_getsize(int inumber);
-
+    // Lê dado do inodo (copia "length" bytes do inodo em data, a partir de "offset")
     int  fs_read(int inumber, char *data, int length, int offset);
+    // Escreve dado do inodo (copia "length" bytes de data no inodo, a partir de "offset")
     int  fs_write(int inumber, const char *data, int length, int offset);
 
 private:
