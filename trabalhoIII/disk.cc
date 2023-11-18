@@ -45,10 +45,14 @@ void Disk::sanity_check( int blocknum, const void *data )
 
 void Disk::read(int blocknum, char *data )
 {
+	// Verifica se o número do bloco é válido
 	sanity_check(blocknum, data);
 
+	// Modifica o indicador de posição
+	// Coloca o indicador no início do bloco indicado por blocknum
     fseek(diskfile, blocknum * DISK_BLOCK_SIZE, SEEK_SET);
 
+	// Armazena as informações em data
 	if(fread(data,DISK_BLOCK_SIZE,1,diskfile)==1) {
 		nreads++;
 	} else {
@@ -59,10 +63,14 @@ void Disk::read(int blocknum, char *data )
 
 void Disk::write(int blocknum, const char *data)
 {
+	// Verifica se o número do bloco é válido
 	sanity_check(blocknum, data);
 
+	// Modifica o indicador de posição
+	// Coloca o indicador no início do bloco indicado por blocknum
     fseek(diskfile,blocknum*DISK_BLOCK_SIZE,SEEK_SET);
 
+	// Escreve as informações armazenadas em data
 	if(fwrite(data,DISK_BLOCK_SIZE,1,diskfile)==1) {
 		nwrites++;
 	} else {
