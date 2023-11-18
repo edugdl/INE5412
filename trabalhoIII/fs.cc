@@ -153,7 +153,6 @@ int INE5412_FS::fs_delete(int inumber)
 	
 	// Lê o inode block
 	disk->read(1 + n_inode_block, inode_block.data);
-
 	// Se o inodo for inválido (não foi criado) retorna 0 (falha)
 	if (!inode_block.inode[inumber_in_inode_block].isvalid) return 0;
 
@@ -177,7 +176,6 @@ int INE5412_FS::fs_delete(int inumber)
 	if (inode_block.inode[inumber_in_inode_block].indirect) {
     // Lê o ponteiro indireto
 		disk->read(inode_block.inode[inumber_in_inode_block].indirect, indirect_block.data);
-    
 		for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
 			if (indirect_block.pointers[i]) {
 				disk->read(indirect_block.pointers[i], block.data);
