@@ -7,7 +7,7 @@ int INE5412_FS::fs_format()
 	// Cria um novo bloco
 	union fs_block block;
 
-	// Cria um data block vom 4096 zeros
+	// Cria um data block com 4096 zeros
 	for (int j = 0; j < disk->size(); j++) block.data[j] = '0';
 	
 	// Copia as informações em "block" (zeros) para todos os blocos do disco
