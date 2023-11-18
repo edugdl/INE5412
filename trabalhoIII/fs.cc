@@ -197,7 +197,22 @@ int INE5412_FS::fs_delete(int inumber)
 
 int INE5412_FS::fs_getsize(int inumber)
 {
-	return -1;
+	fs_block block;
+	fs_block inode_block;
+	// Lê o superblock
+	disk->read(0, block.data);
+
+	// Se inúmero for inválido
+	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*block.super.ninodeblocks) return -1;
+
+	// Calcula em que inode block está o inodo a ser deletado
+	int n_inode_block = inumber / (INODES_PER_BLOCK);
+	// Calcula em que posição dentro do inode block está o inodo a ser deletado
+	int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
+
+	// Lê o inode block
+	disk->read(1 + n_inode_block, inode_block.data);
+	return inode_block[inumber_in_inode_block].size ;
 }
 
 int INE5412_FS::fs_read(int inumber, char *data, int length, int offset)
