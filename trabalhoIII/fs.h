@@ -45,13 +45,16 @@ public:
             // 1024 ponteiros por bloco
     };
 
-    // Data block
-    // TODO adicionar especificações
+    // Cada block do disco vai ser um destes tipos
     union fs_block {
         public:
             fs_superblock super;
             fs_inode inode[INODES_PER_BLOCK];
+            // Array de inteiros
+            // Cada pointer é um número. correspondente a um bloco de dados
             int pointers[POINTERS_PER_BLOCK];
+            // Array de chars
+            // Área de dados do disco
             char data[Disk::DISK_BLOCK_SIZE];
     };
 
