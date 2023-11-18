@@ -166,7 +166,7 @@ int INE5412_FS::fs_delete(int inumber)
 			disk->read(inode->direct[i], block.data);
 			// Zera os ponteiros (não apontam mais para nenhum bloco de dados)
 			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
-			// ???
+			// Sobrescreve as alterações no disco
 			disk->write(indirect_block.pointers[i], block.data);
 			// bitmap[inode->direct[i] - super_block.super.ninodeblocks - 1] = 0;
 		}
@@ -184,7 +184,7 @@ int INE5412_FS::fs_delete(int inumber)
 				disk->read(indirect_block.pointers[i], block.data);
 				// Zera todos os ponteiros do ponteiro indireto
 				for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
-				// ???
+				// Sobrescreve as alterações no disco
 				disk->write(indirect_block.pointers[i], block.data);
 				// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
 			}
