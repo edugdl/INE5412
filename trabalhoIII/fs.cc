@@ -159,9 +159,9 @@ int INE5412_FS::fs_delete(int inumber)
 	// Itera pelos ponteiros do inodo a ser deletado
 	for (int i = 0; i < POINTERS_PER_INODE; i++) {
 		if (inode_block.inode[inumber_in_inode_block].direct[i]) {
-      // Lê os ponteiros do inodo
+      			// Lê os ponteiros do inodo
 			disk->read(inode_block.inode[inumber_in_inode_block].direct[i], block.data);
-      // Zera os ponteiros (não apontam mais para nenhum bloco de dados)
+      			// Zera os ponteiros (não apontam mais para nenhum bloco de dados)
 			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
 			// Sobrescreve as alterações no disco
 			disk->write(indirect_block.pointers[i], block.data);
@@ -174,7 +174,7 @@ int INE5412_FS::fs_delete(int inumber)
 	inode_block.inode[inumber_in_inode_block].size = 0;
 	
 	if (inode_block.inode[inumber_in_inode_block].indirect) {
-    // Lê o ponteiro indireto
+   		// Lê o ponteiro indireto
 		disk->read(inode_block.inode[inumber_in_inode_block].indirect, indirect_block.data);
 		for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
 			if (indirect_block.pointers[i]) {
