@@ -60,10 +60,11 @@ void INE5412_FS::fs_debug()
 			if (current_inode.isvalid) {
 				cout << "inode " << (i-1)*INODES_PER_BLOCK + j<< ":\n";
 				cout << "    " << "size: " << current_inode.size << " bytes\n";
-				cout << "    " << "direct blocks:";
+				string direct_blocks_str = "";
 				for (int direct_block : current_inode.direct)
-					if (direct_block) cout <<  " " << direct_block;
-				cout << "\n";
+					if (direct_block) direct_blocks_str +=  (" " + to_string(direct_block));
+				if (direct_blocks_str != "")
+					cout << "    " << "direct blocks:" << direct_blocks_str << "\n";
 				if (current_inode.indirect) {
 					cout << "    " << "indirect block: " << current_inode.indirect << "\n";
 					cout << "    " << "indirect data blocks:";
