@@ -212,7 +212,7 @@ int INE5412_FS::fs_getsize(int inumber)
 
 	// Lê o inode block
 	disk->read(1 + n_inode_block, inode_block.data);
-	return inode_block[inumber_in_inode_block].size ;
+	return inode_block[inumber_in_inode_block].size;
 }
 
 int INE5412_FS::fs_read(int inumber, char *data, int length, int offset)
