@@ -27,7 +27,7 @@ public:
             int ninodes;
     }; 
 
-    // Inode block
+    // Inode
     // Cada campo de inodo tem 4 bytes
     class fs_inode {
         public:
@@ -49,6 +49,7 @@ public:
     union fs_block {
         public:
             fs_superblock super;
+            // Array de inodos (Inode Block)
             fs_inode inode[INODES_PER_BLOCK];
             // Array de inteiros
             // Cada pointer é um número. correspondente a um bloco de dados

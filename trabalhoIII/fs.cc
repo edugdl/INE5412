@@ -6,8 +6,8 @@ int INE5412_FS::fs_format()
 {
 	// Cria um novo bloco
 	union fs_block block;
-	// Trata o bloco como data block
-	// Cada data block recebe 0
+
+	// Cria um data block vom 4096 zeros
 	for (int j = 0; j < disk->size(); j++) block.data[j] = '0';
 	
 	// Copia as informações em "block" (zeros) para todos os blocos do disco
@@ -36,7 +36,7 @@ void INE5412_FS::fs_debug()
 {
 	union fs_block block;
 
-	// Lê o primeiro bloco do disco (superblock) e armazena em um bloco de dados ("block")
+	// Lê o superblock
 	disk->read(0, block.data);
 
 	cout << "superblock:\n";
@@ -103,7 +103,7 @@ int INE5412_FS::fs_create()
 	disk->read(0, super_block.data);
 	
 	for (int i = 1; super_block.super.ninodeblocks; i++) {
-		// Lê o bloco i do disco e armazena em indoe_block.data
+		// Lê o bloco i do disco
 		disk->read(i, inode_block.data);
 		// Para cada inode dentro do inode block
 		for (int j = 0; j < INODES_PER_BLOCK; j++) {
@@ -136,7 +136,7 @@ int INE5412_FS::fs_create()
 int INE5412_FS::fs_delete(int inumber)
 {
 	fs_block super_block;
-	// Lê o conteúdo do superblock
+	// Lê o superblock
 	disk->read(0, super_block.data);
 
 	// Se inúmero for inválido
