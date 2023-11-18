@@ -153,32 +153,29 @@ int INE5412_FS::fs_delete(int inumber)
 	
 	// Lê o inode block
 	disk->read(1 + n_inode_block, inode_block.data);
-	// Ponteiro para o inodo a ser deletado
-	fs_inode *inode = &inode_block.inode[inumber_in_inode_block];
-	
 	// Se o inodo for inválido (não foi criado) retorna 0 (falha)
-	if (!inode->isvalid) return 0;
+	if (!inode_block.inode[inumber_in_inode_block].isvalid) return 0;
 
 	// Itera pelos ponteiros do inodo a ser deletado
 	for (int i = 0; i < POINTERS_PER_INODE; i++) {
-		if (inode->direct[i]) {
+		if (inode_block.inode[inumber_in_inode_block].direct[i]) {
 			// Lê os ponteiros do inodo
-			disk->read(inode->direct[i], block.data);
+			disk->read(inode_block.inode[inumber_in_inode_block].direct[i], block.data);
 			// Zera os ponteiros (não apontam mais para nenhum bloco de dados)
 			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
 			// Sobrescreve as alterações no disco
 			disk->write(indirect_block.pointers[i], block.data);
-			// bitmap[inode->direct[i] - super_block.super.ninodeblocks - 1] = 0;
+			// bitmap[inode_block.inode[inumber_in_inode_block].direct[i] - super_block.super.ninodeblocks - 1] = 0;
 		}
-		inode->direct[i] = 0;
+		inode_block.inode[inumber_in_inode_block].direct[i] = 0;
 	}
 
-	inode->isvalid = 0;
-	inode->size = 0;
+	inode_block.inode[inumber_in_inode_block].isvalid = 0;
+	inode_block.inode[inumber_in_inode_block].size = 0;
 	
-	if (inode->indirect) {
+	if (inode_block.inode[inumber_in_inode_block].indirect) {
 		// Lê o ponteiro indireto
-		disk->read(inode->indirect, indirect_block.data);
+		disk->read(inode_block.inode[inumber_in_inode_block].indirect, indirect_block.data);
 		for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
 			if (indirect_block.pointers[i]) {
 				disk->read(indirect_block.pointers[i], block.data);
@@ -191,7 +188,7 @@ int INE5412_FS::fs_delete(int inumber)
 		}
 	}
 
-	inode->indirect = 0;
+	inode_block.inode[inumber_in_inode_block].indirect = 0;
 	disk->write(1 + n_inode_block, inode_block.data);
 	super_block.super.ninodes -= 1;
 	disk->write(0, super_block.data);
