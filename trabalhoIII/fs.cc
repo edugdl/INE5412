@@ -1,6 +1,57 @@
 #include "fs.h"
 #include "math.h"
 
+int INE5412_FS::load_inode_if_exists(fs_inode *inode, int inumber, int ninodeblocks) {
+	// Se inúmero for inválido
+	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*ninodeblocks) return 0;
+	load_inode(inumber, inode);
+	if (!inode->isvalid) return 0;
+	return 1;
+}
+
+// Limpa os ponteiros e os blocos que eles apontam
+void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
+	union fs_block block;
+	for (int i = 0; i < npointers; i++) {
+		if (pointers[i]) {
+			disk->read(pointers[i], block.data);
+			// Zera todos os ponteiros do ponteiro indireto
+			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
+			// Sobrescreve as alterações no disco
+			disk->write(pointers[i], block.data);
+			// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
+		}
+		pointers[i] = 0;
+	}
+}
+
+// Lê um inode do disco
+void INE5412_FS::load_inode(int inumber, fs_inode *inode) {
+	// Calcula em que inode block está o inodo a ser carregado
+    int n_inode_block = inumber / (INODES_PER_BLOCK);
+    // Calcula em que posição dentro do inode block está o inodo a ser carregado
+    int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
+
+	union fs_block inode_block;
+
+	disk->read(n_inode_block + 1, inode_block.data);
+	*inode = inode_block.inode[inumber_in_inode_block];
+	
+}
+
+// Salva um inode no disco
+void INE5412_FS::save_inode(int inumber, fs_inode *inode) {
+	// Calcula em que inode block está o inodo a ser carregado
+    int n_inode_block = inumber / (INODES_PER_BLOCK);
+    // Calcula em que posição dentro do inode block está o inodo a ser carregado
+    int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
+
+	union fs_block inode_block;
+	disk->read(n_inode_block + 1, inode_block.data);
+	inode_block.inode[inumber_in_inode_block] = *inode;
+	disk->write(n_inode_block + 1, inode_block.data);
+}
+
 // "Cria" (sobrescreve) um novo FS no disco e apaga todos os dados presentes
 int INE5412_FS::fs_format()
 {
@@ -34,46 +85,39 @@ int INE5412_FS::fs_format()
 // Varre o sistema de arquivos montado e reporta como os inodos e blocos estão organizados
 void INE5412_FS::fs_debug()
 {
-	union fs_block block;
+	union fs_block super_block;
 
 	// Lê o superblock
-	disk->read(0, block.data);
+	disk->read(0, super_block.data);
 
 	cout << "superblock:\n";
-	cout << "    " << (block.super.magic == FS_MAGIC ? "magic number is valid\n" : "magic number is invalid!\n");
- 	cout << "    " << block.super.nblocks << " blocks\n";
-	cout << "    " << block.super.ninodeblocks << " inode blocks\n";
-	cout << "    " << block.super.ninodes << " inodes\n";
+	cout << "    " << (super_block.super.magic == FS_MAGIC ? "magic number is valid\n" : "magic number is invalid!\n");
+ 	cout << "    " << super_block.super.nblocks << " blocks\n";
+	cout << "    " << super_block.super.ninodeblocks << " inode blocks\n";
+	cout << "    " << super_block.super.ninodes << " inodes\n";
 
-	union fs_block inode_block;
 	union fs_block pointer_block;
+	fs_inode inode;
 
 	// Reporta a organização dos inode blocks
-	for (int i = 1; i <= block.super.ninodeblocks; i++) {
-		// Lê o bloco i do disco
-		disk->read(i, inode_block.data);
-		// Para cada inode dentro do inode block
-		for (int j = 0; j < INODES_PER_BLOCK; j++) {
-			// Pega o inodo atual
-			fs_inode current_inode = inode_block.inode[j];
-			// Se o inodo atual for válido (já tiver sido criado)
-			if (current_inode.isvalid) {
-				cout << "inode " << (i-1)*INODES_PER_BLOCK + j<< ":\n";
-				cout << "    " << "size: " << current_inode.size << " bytes\n";
-				string direct_blocks_str = "";
-				for (int direct_block : current_inode.direct)
-					if (direct_block) direct_blocks_str +=  (" " + to_string(direct_block));
-				if (direct_blocks_str != "")
-					cout << "    " << "direct blocks:" << direct_blocks_str << "\n";
-				if (current_inode.indirect) {
-					cout << "    " << "indirect block: " << current_inode.indirect << "\n";
-					cout << "    " << "indirect data blocks:";
-					disk->read(current_inode.indirect, pointer_block.data);
-					for (int pointer : pointer_block.pointers)
-						if (pointer) cout << " " << pointer;
-					cout << "\n";
-				}
-			}
+	for (int inumber = 1; inumber <= super_block.super.ninodeblocks * INODES_PER_BLOCK; inumber++) {
+		// Pega o inodo atual
+		// Se o inodo atual for válido (já tiver sido criado)
+		if (!load_inode_if_exists(&inode, inumber, super_block.super.ninodeblocks)) continue;
+		cout << "inode " << inumber << ":\n";
+		cout << "    " << "size: " << inode.size << " bytes\n";
+		string direct_blocks_str = "";
+		for (int direct_block : inode.direct)
+			if (direct_block) direct_blocks_str +=  (" " + to_string(direct_block));
+		if (direct_blocks_str != "")
+			cout << "    " << "direct blocks:" << direct_blocks_str << "\n";
+		if (inode.indirect) {
+			cout << "    " << "indirect block: " << inode.indirect << "\n";
+			cout << "    " << "indirect data blocks:";
+			disk->read(inode.indirect, pointer_block.data);
+			for (int pointer : pointer_block.pointers)
+				if (pointer) cout << " " << pointer;
+			cout << "\n";
 		}
 	}
 }
@@ -81,7 +125,7 @@ void INE5412_FS::fs_debug()
 // Examina o disco para um FS (se um está presente, lê o superblock, cria bitmap, e prepara o FS para uso)
 int INE5412_FS::fs_mount()
 {
-	fs_block super_block;
+	union fs_block super_block;
 
 	// Lê o superblock
 	disk->read(0, super_block.data);
@@ -97,38 +141,26 @@ int INE5412_FS::fs_mount()
 // Cria um novo inodo de comprimento 0 (retorna inúmero positivo em caso de sucesso, 0 caso contrário)
 int INE5412_FS::fs_create()
 {
-	fs_block super_block;
-	fs_block inode_block;
+	union fs_block super_block;
+	fs_inode inode;
 
 	// Lê o superblock
 	disk->read(0, super_block.data);
 	
-	for (int i = 1; super_block.super.ninodeblocks; i++) {
-		// Lê o bloco i do disco
-		disk->read(i, inode_block.data);
-		// Para cada inode dentro do inode block
-		for (int j = 0; j < INODES_PER_BLOCK; j++) {
-			if (i == 1 && !j) continue;
-			// Se for inválido (não foi criado ainda)
-			if (!inode_block.inode[j].isvalid) {
-				// Configura o inodo como válido
-				inode_block.inode[j].isvalid = 1;
-				// Configura todos os ponteiros para 0 (não apontam para nenhum bloco de dados)
-				for (int k = 0; k < POINTERS_PER_INODE; k++) inode_block.inode[j].direct[k] = 0; 
-				// Configura o ponteiro indireto para 0 (não aponta para nenhum bloco de dados)
-				inode_block.inode[j].indirect = 0;
-				// Configura o tamanho do inode como 0
-				inode_block.inode[j].size = 0;
-				// Sobrescreve o inode block no disco com as novas informações (novo inode)
-				disk->write(i, inode_block.data);
-				super_block.super.ninodes += 1;
-				// Sobrescreve o superblock no disco com as novas informações (novo inode)
-				disk->write(0, super_block.data);
+	// Para cada inode 
+	for (int inumber = 1; inumber <= super_block.super.ninodeblocks * INODES_PER_BLOCK; inumber++) {
+		// Se for inválido (não foi criado ainda)
+		if (load_inode_if_exists(&inode, inumber, super_block.super.ninodeblocks)) continue;
+		// Configura o inodo como válido, todos ponteiros diretos e indireto para 0 e tamanho 0
+		inode = {1,0,{},0};
+		for (int k = 0; k < POINTERS_PER_INODE; k++) inode.direct[k] = 0; 
+		save_inode(inumber, &inode);
+		super_block.super.ninodes += 1;
+		// Sobrescreve o superblock no disco com as novas informações (novo inode)
+		disk->write(0, super_block.data);
 
-				// Retorna o inúmero
-				return (i-1)*INODES_PER_BLOCK + j;
-			}
-		}
+		// Retorna o inúmero
+		return inumber;
 	}
 	return 0;
 }
@@ -136,62 +168,34 @@ int INE5412_FS::fs_create()
 // Deleta o inodo
 int INE5412_FS::fs_delete(int inumber)
 {
-	fs_block super_block;
+	union fs_block super_block;
 	// Lê o superblock
 	disk->read(0, super_block.data);
 
-	// Se inúmero for inválido
-	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*super_block.super.ninodeblocks) return 0;
+	union fs_block indirect_block;
+	fs_inode inode;
 
-	fs_block inode_block;
-	fs_block indirect_block;
-	fs_block block;
-	
-	// Calcula em que inode block está o inodo a ser deletado
-	int n_inode_block = inumber / (INODES_PER_BLOCK);
-	// Calcula em que posição dentro do inode block está o inodo a ser deletado
-	int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
-	
-	// Lê o inode block
-	disk->read(1 + n_inode_block, inode_block.data);
-	// Se o inodo for inválido (não foi criado) retorna 0 (falha)
-	if (!inode_block.inode[inumber_in_inode_block].isvalid) return 0;
+	if (!load_inode_if_exists(&inode, inumber, super_block.super.ninodeblocks)) return 0;
 
-	// Itera pelos ponteiros do inodo a ser deletado
-	for (int i = 0; i < POINTERS_PER_INODE; i++) {
-		if (inode_block.inode[inumber_in_inode_block].direct[i]) {
-			// Lê os ponteiros do inodo
-			disk->read(inode_block.inode[inumber_in_inode_block].direct[i], block.data);
-			// Zera os ponteiros (não apontam mais para nenhum bloco de dados)
-			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
-			// Sobrescreve as alterações no disco
-			disk->write(indirect_block.pointers[i], block.data);
-			// bitmap[inode_block.inode[inumber_in_inode_block].direct[i] - super_block.super.ninodeblocks - 1] = 0;
-		}
-		inode_block.inode[inumber_in_inode_block].direct[i] = 0;
+	// Se houver ponteiro indireto
+	if (inode.indirect) {
+		// Lê o bloco de ponteiros
+		disk->read(inode.indirect, indirect_block.data);
+		// Limpa os ponteiros
+		clear_pointers(POINTERS_PER_BLOCK, indirect_block.pointers);
+		// Sobrescreve o bloco indireto no disco, limpando-o
+		disk->write(inode.indirect, indirect_block.data);
 	}
+	// Limpa os ponteiros diretos
+	clear_pointers(POINTERS_PER_INODE, inode.direct);
 
-	inode_block.inode[inumber_in_inode_block].isvalid = 0;
-	inode_block.inode[inumber_in_inode_block].size = 0;
-	
-	if (inode_block.inode[inumber_in_inode_block].indirect) {
-		// Lê o ponteiro indireto
-		disk->read(inode_block.inode[inumber_in_inode_block].indirect, indirect_block.data);
-		for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
-			if (indirect_block.pointers[i]) {
-				disk->read(indirect_block.pointers[i], block.data);
-				// Zera todos os ponteiros do ponteiro indireto
-				for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
-				// Sobrescreve as alterações no disco
-				disk->write(indirect_block.pointers[i], block.data);
-				// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
-			}
-		}
-	}
+	// Limpa o resto dos dados
+	inode = {0,0,*inode.direct,0};
 
-	inode_block.inode[inumber_in_inode_block].indirect = 0;
-	disk->write(1 + n_inode_block, inode_block.data);
+	// Sobrescreve o inode no disco (limpando-o)
+	save_inode(inumber, &inode);
 	super_block.super.ninodes -= 1;
+	// Sobrescreve o superblock no disco com as novas informações (remove o inode)
 	disk->write(0, super_block.data);
 	return 1;
 }
