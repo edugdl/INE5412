@@ -13,14 +13,13 @@ int INE5412_FS::load_inode_if_exists(fs_inode *inode, int inumber, int ninodeblo
 void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 	union fs_block block;
 	for (int i = 0; i < npointers; i++) {
-		if (pointers[i]) {
-			disk->read(pointers[i], block.data);
-			// Zera todos os ponteiros do ponteiro indireto
-			for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
-			// Sobrescreve as alterações no disco
-			disk->write(pointers[i], block.data);
-			// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
-		}
+		if (!pointers[i]) continue;
+		disk->read(pointers[i], block.data);
+		// Zera todos os ponteiros do ponteiro indireto
+		for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
+		// Sobrescreve as alterações no disco
+		disk->write(pointers[i], block.data);
+		// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
 		pointers[i] = 0;
 	}
 }
