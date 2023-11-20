@@ -89,6 +89,7 @@ public:
     void save_inode(int inumber, fs_inode *inode);
     void clear_pointers(int npointers, int pointers[]);
     int  load_inode_if_exists(fs_inode *inode,int inumber, int ninodeblocks);
+    void change_bitmap(int block);
 
 private:
     Disk *disk;
