@@ -217,31 +217,38 @@ int INE5412_FS::fs_getsize(int inumber)
 	return -1;
 }
 
+// Lê dado do inodo (copia "length" bytes do inodo em data, a partir de "offset")
 int INE5412_FS::fs_read(int inumber, char *data, int length, int offset)
 {
 	union fs_block super_block;
 	union fs_block indirect_block;
-
+	// Lê o super bloco
 	disk->read(0, super_block.data);
 	
 	fs_inode inode;
+	// Verifica erros (offset incorreto, length, etc...) e retorna 0
 	if (!load_inode(&inode, inumber, super_block.super.ninodeblocks) || offset < 0 || length <= 0 || offset >= inode.size) return 0;
+	// Se o offset + length supera o tamanho do inode, length sera o restante para ler todo o inode
 	if (offset + length > inode.size) length = inode.size - offset;
 
+	// Define o bloco inicial da leitura e seu offset
 	int starting_block = offset / disk->DISK_BLOCK_SIZE;
 	int starting_index = offset % disk->DISK_BLOCK_SIZE;
 	int bytes_read = 0;
-
+	// Lê os ponteiros diretos (caso o bloco inicial seja < POINTERS_PER_INODE)
 	if (read_pointers(length, &bytes_read, starting_block, starting_index, POINTERS_PER_INODE, inode.direct, data)) return bytes_read;
 	if (!inode.indirect) return bytes_read;
 	
-	starting_block -= 5;
+	// Caso o bloco inicial seja 5, sera o bloco 0 apontado pelo bloco indireto 
+	starting_block -= POINTERS_PER_INODE;
+	// Caso seja negativo, ambos valores sao 0
 	if (starting_block < 0) {
 		starting_block = 0;
 		starting_index = 0;
 	}
 
 	disk->read(inode.indirect, indirect_block.data);
+	// Lê os ponteiros indiretos
 	read_pointers(length, &bytes_read, starting_block, starting_index, POINTERS_PER_BLOCK, indirect_block.pointers, data);
 	return bytes_read;
 	
