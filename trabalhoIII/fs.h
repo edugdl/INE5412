@@ -93,6 +93,8 @@ public:
     void clear_pointers(int npointers, int pointers[]);
     // Lê os blocos que os ponteiros apontam e os salva em data
     int  read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data);
+    // Troca o valor armazenado em bitmap[block]
+    void change_bitmap(int block);
 
 private:
     Disk *disk;

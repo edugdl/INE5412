@@ -1,7 +1,6 @@
 #include "fs.h"
 #include "math.h"
 
-
 int INE5412_FS::read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data) {
 	union fs_block block;
 	for (int i = starting_block; i < npointers; i++) {
@@ -18,6 +17,12 @@ int INE5412_FS::read_pointers(int length, int* bytes_read, int starting_block, i
 	return 0;
 }
 
+void INE5412_FS::change_bitmap(int block) {
+	union fs_block super_block;
+	disk->read(0, super_block.data);
+	bitmap[block - super_block.super.ninodeblocks - 1] = !bitmap[block - super_block.super.ninodeblocks - 1];
+}
+
 // Limpa os ponteiros e os blocos que eles apontam
 void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 	union fs_block block;
@@ -28,7 +33,7 @@ void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 		for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
 		// Sobrescreve as alterações no disco
 		disk->write(pointers[i], block.data);
-		// bitmap[indirect_block.pointers[i] - super_block.super.ninodeblocks - 1] = 0;
+		change_bitmap(pointers[i]);
 		pointers[i] = 0;
 	}
 }
@@ -67,30 +72,34 @@ void INE5412_FS::save_inode(int inumber, fs_inode *inode) {
 // "Cria" (sobrescreve) um novo FS no disco e apaga todos os dados presentes
 int INE5412_FS::fs_format()
 {
-	// Cria um novo bloco
+	// Define o super bloco
+	union fs_block super_block;
+	// Cria um bloco
 	union fs_block block;
 
-	// Cria um data block com 4096 zeros
-	for (int j = 0; j < disk->size(); j++) block.data[j] = '0';
-	
-	// Copia as informações em "block" (zeros) para todos os blocos do disco
-	for (int i = 0; i < disk->size(); i++) {
-		disk->write(i, block.data);
-	}
-
-	if (bitmap) {
-		delete bitmap;
-	}
+	disk->read(0, super_block.data);
+	// Verifica se ja existe um sistema de arquivos
+	if (super_block.super.magic == FS_MAGIC) return 0;
 
 	// Configura as informações básicas do novo sistema de arquivos
-	block.super.magic = FS_MAGIC;
-	block.super.nblocks = disk->size();
-	// Número de blocos de inodo = 10% do número de blocos
-	block.super.ninodeblocks = ceil(disk->size()/10);
-	block.super.ninodes = 0;
+	super_block.super = {FS_MAGIC, disk->size(), (int)ceil(disk->size()/10), 0};
+	// Cria um inodo generico invalido
+	fs_inode inode = {0,0,{},0};
+	for (int i = 0; i < POINTERS_PER_INODE; i++) inode.direct[i] = 0;
 
-	disk->write(0, block.data);
-
+	// Reserva 10% dos blocos para inodos
+	for (int i = 0; i < super_block.super.ninodeblocks*INODES_PER_BLOCK; i++) {
+		save_inode(i, &inode);
+	}
+	
+	// Define o data block com 4096 zeros
+	for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) block.data[i] = '0';
+	// Copia as informações em "block" (zeros) para todos os blocos de dados do disco
+	for (int i = super_block.super.ninodeblocks + 1; i < super_block.super.nblocks; i++) {
+		disk->write(i, block.data);
+	}
+	if (bitmap) delete bitmap;
+	disk->write(0, super_block.data);
 	return 1;
 }
 
@@ -138,14 +147,28 @@ void INE5412_FS::fs_debug()
 int INE5412_FS::fs_mount()
 {
 	union fs_block super_block;
-
+	union fs_block indirect_block;
+	fs_inode inode;
 	// Lê o superblock
 	disk->read(0, super_block.data);
+
+	if (super_block.super.magic != FS_MAGIC) return 0;
 
 	// Cria o bitmap
 	// calloc (número de elementos a alocar, tamanho de cada elemento): Aloca dinamicamente um bloco contíguo de memória [Aloca e zera os conteúdos]
 	// Ignora os Inode Blocks e o Super Block
 	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
+	for (int i = 0; i < super_block.super.ninodeblocks * INODES_PER_BLOCK; i++) {
+		if (!load_inode_if_exists(&inode, i, super_block.super.ninodeblocks)) continue;
+		for (int j = 0; j < POINTERS_PER_INODE; j++)
+			if (inode.direct[j]) bitmap[inode.direct[j]] = 1;
+		if (!inode.indirect) continue;
+		bitmap[inode.indirect] = 1;
+		disk->read(inode.indirect, indirect_block.data);
+		for (int j = 0; j < POINTERS_PER_BLOCK; j++) {
+			if (indirect_block.pointers[j]) bitmap[indirect_block.pointers[j]] = 1;
+		}
+	}
 
 	return 1;
 }
@@ -197,6 +220,7 @@ int INE5412_FS::fs_delete(int inumber)
 		clear_pointers(POINTERS_PER_BLOCK, indirect_block.pointers);
 		// Sobrescreve o bloco indireto no disco, limpando-o
 		disk->write(inode.indirect, indirect_block.data);
+		change_bitmap(inode.indirect);
 	}
 	// Limpa os ponteiros diretos
 	clear_pointers(POINTERS_PER_INODE, inode.direct);
