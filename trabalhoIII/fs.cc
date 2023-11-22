@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "math.h"
 
+// Lê os blocos que os ponteiros apontam e os salva em data
 int INE5412_FS::read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data) {
 	union fs_block block;
 	for (int i = starting_block; i < npointers; i++) {
@@ -17,6 +18,7 @@ int INE5412_FS::read_pointers(int length, int* bytes_read, int starting_block, i
 	return 0;
 }
 
+// Troca o valor armazenado em bitmap[block]
 void INE5412_FS::change_bitmap(int block) {
 	union fs_block super_block;
 	disk->read(0, super_block.data);
@@ -159,7 +161,7 @@ int INE5412_FS::fs_mount()
 	// Ignora os Inode Blocks e o Super Block
 	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
 	for (int i = 0; i < super_block.super.ninodeblocks * INODES_PER_BLOCK; i++) {
-		if (!load_inode_if_exists(&inode, i, super_block.super.ninodeblocks)) continue;
+		if (!load_inode(&inode, i, super_block.super.ninodeblocks)) continue;
 		for (int j = 0; j < POINTERS_PER_INODE; j++)
 			if (inode.direct[j]) bitmap[inode.direct[j]] = 1;
 		if (!inode.indirect) continue;
