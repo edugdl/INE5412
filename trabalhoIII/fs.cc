@@ -43,7 +43,7 @@ void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 // Lê um inode do disco e retorna se existe
 int INE5412_FS::load_inode(fs_inode *inode, int inumber, int ninodeblocks) {
 	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*ninodeblocks) return 0;
-
+	inumber--;
 	// Calcula em que inode block está o inodo a ser carregado
     int n_inode_block = inumber / (INODES_PER_BLOCK);
     // Calcula em que posição dentro do inode block está o inodo a ser carregado
@@ -60,6 +60,7 @@ int INE5412_FS::load_inode(fs_inode *inode, int inumber, int ninodeblocks) {
 
 // Salva um inode no disco
 void INE5412_FS::save_inode(int inumber, fs_inode *inode) {
+	inumber--;
 	// Calcula em que inode block está o inodo a ser carregado
     int n_inode_block = inumber / (INODES_PER_BLOCK);
     // Calcula em que posição dentro do inode block está o inodo a ser carregado
@@ -90,7 +91,7 @@ int INE5412_FS::fs_format()
 	for (int i = 0; i < POINTERS_PER_INODE; i++) inode.direct[i] = 0;
 
 	// Reserva 10% dos blocos para inodos
-	for (int i = 0; i < super_block.super.ninodeblocks*INODES_PER_BLOCK; i++) {
+	for (int i = 1; i <= super_block.super.ninodeblocks*INODES_PER_BLOCK; i++) {
 		save_inode(i, &inode);
 	}
 	
@@ -160,7 +161,7 @@ int INE5412_FS::fs_mount()
 	// calloc (número de elementos a alocar, tamanho de cada elemento): Aloca dinamicamente um bloco contíguo de memória [Aloca e zera os conteúdos]
 	// Ignora os Inode Blocks e o Super Block
 	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
-	for (int i = 0; i < super_block.super.ninodeblocks * INODES_PER_BLOCK; i++) {
+	for (int i = 1; i <= super_block.super.ninodeblocks * INODES_PER_BLOCK; i++) {
 		if (!load_inode(&inode, i, super_block.super.ninodeblocks)) continue;
 		for (int j = 0; j < POINTERS_PER_INODE; j++)
 			if (inode.direct[j]) bitmap[inode.direct[j]] = 1;
@@ -178,6 +179,7 @@ int INE5412_FS::fs_mount()
 // Cria um novo inodo de comprimento 0 (retorna inúmero positivo em caso de sucesso, 0 caso contrário)
 int INE5412_FS::fs_create()
 {
+	if (!bitmap) return 0;
 	union fs_block super_block;
 	fs_inode inode;
 
@@ -205,6 +207,7 @@ int INE5412_FS::fs_create()
 // Deleta o inodo
 int INE5412_FS::fs_delete(int inumber)
 {
+	if (!bitmap) return 0;
 	union fs_block super_block;
 	// Lê o superblock
 	disk->read(0, super_block.data);
@@ -254,6 +257,7 @@ int INE5412_FS::fs_getsize(int inumber)
 // Lê dado do inodo (copia "length" bytes do inodo em data, a partir de "offset")
 int INE5412_FS::fs_read(int inumber, char *data, int length, int offset)
 {
+	if (!bitmap) return 0;
 	union fs_block super_block;
 	union fs_block indirect_block;
 	// Lê o super bloco
