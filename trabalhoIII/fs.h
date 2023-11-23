@@ -1,6 +1,6 @@
 #ifndef FS_H
 #define FS_H
-
+#include <vector>
 #include "disk.h"
 
 class INE5412_FS
@@ -59,6 +59,12 @@ public:
             char data[Disk::DISK_BLOCK_SIZE];
     };
 
+    class w_in_p_return {
+        public:
+            int index;
+            int value;
+    };
+
 public:
 
     INE5412_FS(Disk *d) {
@@ -92,10 +98,15 @@ public:
     // Limpa os ponteiros e os blocos que eles apontam
     void clear_pointers(int npointers, int pointers[]);
     // Lê os blocos que os ponteiros apontam e os salva em data
-    int  read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data);
+    int  read_pointers(int length, int* bytes_read, int starting_pointer, int npointers, int *pointers, char *data);
     // Troca o valor armazenado em bitmap[block]
     void change_bitmap(int block);
-
+    // Retorna o valor total em bytes que o inodo ainda consegue armazenar
+    int  get_remaining_storage_size(fs_inode inode);
+    std::vector<int>  write_in_pointers(int *bytes_written, int length, int starting_block, int npointers, int *pointers, const char *data);
+    int  bitmap_hash(int i);
+    int  get_next_free_block();
+    int  alloc_indirect_block();
 private:
     Disk *disk;
 };
