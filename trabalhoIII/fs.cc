@@ -240,7 +240,15 @@ int INE5412_FS::fs_delete(int inumber)
 
 int INE5412_FS::fs_getsize(int inumber)
 {
-	return -1;
+	fs_block block;
+	fs_inode inode;
+
+	// Lê o superblock
+	disk->read(0, block.data);
+
+	if (!load_inode(&inode, inumber, block.super.ninodeblocks)) return -1;
+
+	return inode.size;
 }
 
 // Lê dado do inodo (copia "length" bytes do inodo em data, a partir de "offset")
