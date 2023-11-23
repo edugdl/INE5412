@@ -52,7 +52,7 @@ public:
             // Array de inodos (Inode Block)
             fs_inode inode[INODES_PER_BLOCK];
             // Array de inteiros
-            // Cada pointer é um número. correspondente a um bloco de dados
+            // Cada pointer é um número correspondente a um bloco de dados
             int pointers[POINTERS_PER_BLOCK];
             // Array de chars
             // Área de dados do disco
@@ -85,6 +85,16 @@ public:
     int  fs_read(int inumber, char *data, int length, int offset);
     // Escreve dado do inodo (copia "length" bytes de data no inodo, a partir de "offset")
     int  fs_write(int inumber, const char *data, int length, int offset);
+    // Lê um inode do disco e retorna se existe
+    int load_inode(fs_inode *inode, int inumber, int ninodeblocks);
+    // Salva um inode no disco
+    void save_inode(int inumber, fs_inode *inode);
+    // Limpa os ponteiros e os blocos que eles apontam
+    void clear_pointers(int npointers, int pointers[]);
+    // Lê os blocos que os ponteiros apontam e os salva em data
+    int  read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data);
+    // Troca o valor armazenado em bitmap[block]
+    void change_bitmap(int block);
 
 private:
     Disk *disk;
