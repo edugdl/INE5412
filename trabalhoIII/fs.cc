@@ -248,13 +248,6 @@ int INE5412_FS::fs_getsize(int inumber)
 
 	if (!load_inode(&inode, inumber, block.super.ninodeblocks)) return -1;
 
-	// Se inúmero for inválido
-	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*block.super.ninodeblocks) return -1;
-	// Calcula em que inode block está o inodo a ser deletado
-	int n_inode_block = inumber / (INODES_PER_BLOCK);
-	// Calcula em que posição dentro do inode block está o inodo a ser deletado
-	int inumber_in_inode_block = inumber % INODES_PER_BLOCK;
-
 	return inode.size;
 }
 
