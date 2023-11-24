@@ -97,7 +97,7 @@ void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 
 // Lê um inode do disco e retorna se existe
 int INE5412_FS::load_inode(fs_inode *inode, int inumber, int ninodeblocks) {
-	if (inumber <= 0 || inumber >= INODES_PER_BLOCK*ninodeblocks) return 0;
+	if (inumber <= 0 || inumber > INODES_PER_BLOCK*ninodeblocks) return 0;
 	inumber--;
 	// Calcula em que inode block está o inodo a ser carregado
     int n_inode_block = inumber / (INODES_PER_BLOCK);
@@ -140,7 +140,7 @@ int INE5412_FS::fs_format()
 	if (super_block.super.magic == FS_MAGIC) return 0;
 
 	// Configura as informações básicas do novo sistema de arquivos
-	super_block.super = {FS_MAGIC, disk->size(), (int)ceil(disk->size()/10), 0};
+	super_block.super = {FS_MAGIC, disk->size(), (int)ceil(disk->size()/10), INODES_PER_BLOCK*(int) ceil(disk->size()/10)};
 	// Cria um inodo generico invalido
 	fs_inode inode = {0,0,{},0};
 	for (int i = 0; i < POINTERS_PER_INODE; i++) inode.direct[i] = 0;
@@ -179,7 +179,7 @@ void INE5412_FS::fs_debug()
 	fs_inode inode;
 
 	// Reporta a organização dos inode blocks
-	for (int inumber = 1; inumber <= super_block.super.ninodeblocks * INODES_PER_BLOCK; inumber++) {
+	for (int inumber = 1; inumber <= super_block.super.ninodes; inumber++) {
 		// Pega o inodo atual
 		// Se o inodo atual for válido (já tiver sido criado)
 		if (!load_inode(&inode, inumber, super_block.super.ninodeblocks)) continue;
@@ -216,7 +216,7 @@ int INE5412_FS::fs_mount()
 	// calloc (número de elementos a alocar, tamanho de cada elemento): Aloca dinamicamente um bloco contíguo de memória [Aloca e zera os conteúdos]
 	// Ignora os Inode Blocks e o Super Block
 	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
-	for (int i = 1; i <= super_block.super.ninodeblocks * INODES_PER_BLOCK; i++) {
+	for (int i = 1; i <= super_block.super.ninodes; i++) {
 		if (!load_inode(&inode, i, super_block.super.ninodeblocks)) continue;
 		for (int j = 0; j < POINTERS_PER_INODE; j++)
 			if (inode.direct[j]) change_bitmap(inode.direct[j]);
@@ -239,16 +239,14 @@ int INE5412_FS::fs_create()
 
 	// Lê o superblock
 	disk->read(0, super_block.data);
-	
 	// Para cada inode 
-	for (int inumber = 1; inumber <= super_block.super.ninodeblocks * INODES_PER_BLOCK; inumber++) {
+	for (int inumber = 1; inumber <= super_block.super.ninodes; inumber++) {
 		// Se for inválido (não foi criado ainda)
 		if (load_inode(&inode, inumber, super_block.super.ninodeblocks)) continue;
 		// Configura o inodo como válido, todos ponteiros diretos e indireto para 0 e tamanho 0
 		inode = {1,0,{},0};
 		for (int k = 0; k < POINTERS_PER_INODE; k++) inode.direct[k] = 0; 
 		save_inode(inumber, &inode);
-		super_block.super.ninodes += 1;
 		// Sobrescreve o superblock no disco com as novas informações (novo inode)
 		disk->write(0, super_block.data);
 
@@ -289,7 +287,6 @@ int INE5412_FS::fs_delete(int inumber)
 
 	// Sobrescreve o inode no disco (limpando-o)
 	save_inode(inumber, &inode);
-	super_block.super.ninodes -= 1;
 	// Sobrescreve o superblock no disco com as novas informações (remove o inode)
 	disk->write(0, super_block.data);
 	return 1;
@@ -363,11 +360,10 @@ int INE5412_FS::fs_write(int inumber, const char *data, int length, int offset)
 
 	std::vector<int> written_blocks = write_in_pointers(&bytes_written, length, starting_pointer, POINTERS_PER_INODE, inode.direct, data);
 
-	if (written_blocks.size()) {
-		for (int i = 0; i < (int) written_blocks.size(); i+=2) inode.direct[written_blocks[i]] = written_blocks[i+1];
-		inode.size += bytes_written;
-		save_inode(inumber, &inode);
-	}
+	for (int i = 0; i < (int) written_blocks.size(); i+=2) inode.direct[written_blocks[i]] = written_blocks[i+1];
+	inode.size += bytes_written;
+	save_inode(inumber, &inode);
+
 	if (bytes_written == length) return bytes_written; 
 	if (!inode.indirect) inode.indirect = alloc_indirect_block();
 	
