@@ -26,7 +26,7 @@ int INE5412_FS::get_remaining_storage_size(fs_inode inode) {
 std::vector<int> INE5412_FS::write_in_pointers(int *bytes_written, int length, int starting_block, int npointers, int *pointers, const char *data) {
 	union fs_block block;
 	std::vector<int> written_blocks;
-	for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) block.data[i] = '0';
+	for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) block.data[i] = ' ';
 	int next_free_block;
 	for (int i = starting_block; i < npointers; i++) {
 		if (pointers[i]) continue;
@@ -43,6 +43,7 @@ std::vector<int> INE5412_FS::write_in_pointers(int *bytes_written, int length, i
 				return written_blocks;
 			}
 		}
+		disk->write(next_free_block, block.data);
 		change_bitmap(next_free_block);
 		written_blocks.push_back(i);
 		written_blocks.push_back(next_free_block);
@@ -87,7 +88,7 @@ void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 		if (!pointers[i]) continue;
 		disk->read(pointers[i], block.data);
 		// Zera todos os ponteiros do ponteiro indireto
-		for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = '0';
+		for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) block.data[j] = ' ';
 		// Sobrescreve as alterações no disco
 		disk->write(pointers[i], block.data);
 		change_bitmap(pointers[i]);
@@ -150,9 +151,9 @@ int INE5412_FS::fs_format()
 		save_inode(i, &inode);
 	}
 	
-	// Define o data block com 4096 zeros
-	for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) block.data[i] = '0';
-	// Copia as informações em "block" (zeros) para todos os blocos de dados do disco
+	// Define o data block com 4096 ' '
+	for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) block.data[i] = ' ';
+	// Copia as informações em "block" (' ') para todos os blocos de dados do disco
 	for (int i = super_block.super.ninodeblocks + 1; i < super_block.super.nblocks; i++) {
 		disk->write(i, block.data);
 	}
@@ -275,13 +276,14 @@ int INE5412_FS::fs_delete(int inumber)
 		disk->read(inode.indirect, indirect_block.data);
 		// Limpa os ponteiros
 		clear_pointers(POINTERS_PER_BLOCK, indirect_block.pointers);
+		for (int i = 0; i < POINTERS_PER_BLOCK; i++) indirect_block.pointers[i] = 0;
 		// Sobrescreve o bloco indireto no disco, limpando-o
 		disk->write(inode.indirect, indirect_block.data);
 		change_bitmap(inode.indirect);
 	}
 	// Limpa os ponteiros diretos
 	clear_pointers(POINTERS_PER_INODE, inode.direct);
-
+	for (int i = 0; i < POINTERS_PER_INODE; i++) inode.direct[i] = 0;
 	// Limpa o resto dos dados
 	inode = {0,0,*inode.direct,0};
 
