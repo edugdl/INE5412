@@ -97,6 +97,7 @@ public:
     void change_bitmap(int block);
     // Retorna o valor total em bytes que o inodo ainda consegue armazenar
     int  get_remaining_storage_size(fs_inode inode);
+    // Escreve "data" nos ponteiros (salva no disco) e retorna os ponteiros usados e para que blocos apontam
     std::vector<int>  write_in_pointers(int *bytes_written, int length, int starting_block, int npointers, int *pointers, const char *data);
     // Retorna a posição do bloco i no bitmap
     int  bitmap_hash(int i);
