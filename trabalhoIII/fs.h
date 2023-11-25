@@ -1,6 +1,6 @@
 #ifndef FS_H
 #define FS_H
-
+#include <vector>
 #include "disk.h"
 
 class INE5412_FS
@@ -66,7 +66,7 @@ public:
     } 
 
     ~INE5412_FS() {
-        delete bitmap;
+        delete[] bitmap;
     }
 
     // Varre o sistema de arquivos montado e reporta como os inodos e blocos estão organizados
@@ -83,7 +83,7 @@ public:
     int  fs_getsize(int inumber);
     // Lê dado do inodo (copia "length" bytes do inodo em data, a partir de "offset")
     int  fs_read(int inumber, char *data, int length, int offset);
-    // Escreve dado do inodo (copia "length" bytes de data no inodo, a partir de "offset")
+    // Escreve dado no inodo (copia "length" bytes de data no inodo, a partir de "offset")
     int  fs_write(int inumber, const char *data, int length, int offset);
     // Lê um inode do disco e retorna se existe
     int load_inode(fs_inode *inode, int inumber, int ninodeblocks);
@@ -92,10 +92,19 @@ public:
     // Limpa os ponteiros e os blocos que eles apontam
     void clear_pointers(int npointers, int pointers[]);
     // Lê os blocos que os ponteiros apontam e os salva em data
-    int  read_pointers(int length, int* bytes_read, int starting_block, int starting_index, int npointers, int pointers[], char *data);
+    int  read_pointers(int length, int* bytes_read, int starting_pointer, int npointers, int *pointers, char *data);
     // Troca o valor armazenado em bitmap[block]
     void change_bitmap(int block);
-
+    // Retorna o valor total em bytes que o inodo ainda consegue armazenar
+    int  get_remaining_storage_size(fs_inode inode);
+    // Escreve "data" nos ponteiros (salva no disco) e retorna os ponteiros usados e para que blocos apontam
+    std::vector<int>  write_in_pointers(int *bytes_written, int length, int starting_block, int npointers, int *pointers, const char *data);
+    // Retorna a posição do bloco i no bitmap
+    int  bitmap_hash(int i);
+    // Retorna a posição do próximo bloco livre
+    int  get_next_free_block();
+    // Aloca dados nos blocos indiretos
+    int  alloc_indirect_block();
 private:
     Disk *disk;
 };
