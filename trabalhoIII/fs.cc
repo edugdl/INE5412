@@ -146,8 +146,6 @@ void INE5412_FS::clear_pointers(int npointers, int pointers[]) {
 		disk->write(pointers[i], block.data);
 		// Libera o bloco que estava sendo apontado pelo ponteiro
 		change_bitmap(pointers[i]);
-		// Ponteiro deixa de apontar para algum bloco
-		pointers[i] = 0;
 	}
 }
 
@@ -339,7 +337,7 @@ int INE5412_FS::fs_delete(int inumber)
 		disk->read(inode.indirect, indirect_block.data);
 		// Limpa os ponteiros
 		clear_pointers(POINTERS_PER_BLOCK, indirect_block.pointers);
-		for (int i = 0; i < POINTERS_PER_BLOCK; i++) indirect_block.pointers[i] = 0;
+		for (int i = 0; i < disk->DISK_BLOCK_SIZE; i++) indirect_block.data[i] = ' ';
 		// Sobrescreve o bloco indireto no disco, limpando-o
 		disk->write(inode.indirect, indirect_block.data);
 		change_bitmap(inode.indirect);
