@@ -45,9 +45,6 @@ int INE5412_FS::get_remaining_storage_size(fs_inode *inode) {
 
 // Escreve "data" nos ponteiros (salva no disco)
 std::vector<int> INE5412_FS::write_in_pointers(int *bytes_written, int length, int starting_block, int npointers, int *pointers, const char *data) {
-	// npointers = POINTERS_PER_BLOCK
-	// pointers = inode.direct
-
 	union fs_block block;
 
 	// Vetor que contém em que blocos foram escritos dados (para onde os ponteiros diretos/indiretos apontam)
@@ -114,7 +111,6 @@ int INE5412_FS::get_next_free_block() {
 // Lê os blocos que os ponteiros apontam e os salva em data
 int INE5412_FS::read_pointers(int length, int* bytes_read, int starting_pointer, int npointers, int *pointers, char *data) {
 	union fs_block block;
-
 
 	for (int i = starting_pointer; i < npointers; i++) {
 		// Se o ponteiro não estiver sendo usado, pule
