@@ -222,7 +222,7 @@ int INE5412_FS::fs_format()
 	for (int i = super_block.super.ninodeblocks + 1; i < super_block.super.nblocks; i++) {
 		disk->write(i, block.data);
 	}
-	if (bitmap) delete bitmap;
+	if (bitmap) delete[] bitmap;
 	disk->write(0, super_block.data);
 	return 1;
 }
@@ -279,9 +279,9 @@ int INE5412_FS::fs_mount()
 	if (super_block.super.magic != FS_MAGIC) return 0;
 
 	// Cria o bitmap
-	// calloc (número de elementos a alocar, tamanho de cada elemento): Aloca dinamicamente um bloco contíguo de memória [Aloca e zera os conteúdos]
 	// Ignora os Inode Blocks e o Super Block
-	bitmap = (int*) calloc(super_block.super.nblocks - super_block.super.ninodeblocks - 1, sizeof(int));
+	bitmap = new int[super_block.super.nblocks - super_block.super.ninodeblocks - 1];
+	for (int i = 0; i < super_block.super.nblocks  - super_block.super.ninodeblocks - 1; i++) bitmap[i] = 0;
 	for (int i = 1; i <= super_block.super.ninodes; i++) {
 		if (!load_inode(&inode, i, super_block.super.ninodeblocks)) continue;
 		for (int j = 0; j < POINTERS_PER_INODE; j++)
