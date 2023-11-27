@@ -28,11 +28,19 @@ int INE5412_FS::alloc_indirect_block() {
 }
 
 // Retorna o valor total em bytes que o inodo ainda consegue armazenar
-int INE5412_FS::get_remaining_storage_size(fs_inode inode) {
-	// Tamanho em bytes de ponteiros diretos + indiretos
-	int total_storage_size = (POINTERS_PER_INODE + POINTERS_PER_BLOCK) * disk->DISK_BLOCK_SIZE;
-	// Retorna o tamanho total - espaço já sendo ocupado no inodo
-	return total_storage_size - inode.size;
+int INE5412_FS::get_remaining_storage_size(fs_inode *inode) {
+	int free_blocks = 0;
+	union fs_block indirect_block;
+	// Percorre os ponteiros diretos e indiretos, incrementando free_blocks quando o ponteiro
+	// não aponta para um bloco de dados, ou seja, 0.
+	for (int i = 0; i < POINTERS_PER_INODE; i++)
+		if (!inode->direct[i]) free_blocks++;
+	
+	disk->read(inode->indirect, indirect_block.data);	
+	for (int i = 0; i < POINTERS_PER_BLOCK; i++)
+		if (!indirect_block.pointers[i]) free_blocks++;
+
+	return free_blocks * disk->DISK_BLOCK_SIZE;
 }
 
 // Escreve "data" nos ponteiros (salva no disco)
@@ -56,7 +64,7 @@ std::vector<int> INE5412_FS::write_in_pointers(int *bytes_written, int length, i
 		next_free_block = get_next_free_block();
 		// Se não há mais blocos livres para escrever, retorna os blocos em que escreveu
 		if (!next_free_block) return written_blocks;
-
+		
 		// Dentro do next_free_block
 		for (int j = 0; j < disk->DISK_BLOCK_SIZE; j++) {
 			// Escreve o byte de "data" no bloco
@@ -418,10 +426,11 @@ int INE5412_FS::fs_write(int inumber, const char *data, int length, int offset)
 	fs_inode inode;
 
 	// Verifica erros (offset incorreto, length, etc...) e retorna 0
-	if (!load_inode(&inode, inumber, super_block.super.ninodeblocks) || offset < 0 || length <= 0 || !get_remaining_storage_size(inode)) return 0;
-
+	if (!load_inode(&inode, inumber, super_block.super.ninodeblocks) || offset < 0 || length <= 0) return 0;
+	int remaining_storage_size = get_remaining_storage_size(&inode);
+	if (!remaining_storage_size) return 0;
 	// Se não tiver espaço para escrever tudo, a nova length é apenas o que couber
-	if (offset + length > get_remaining_storage_size(inode)) length = get_remaining_storage_size(inode);
+	if (length > remaining_storage_size) length = remaining_storage_size;
 
 	// Define o bloco inicial da escrita
 	int starting_pointer = offset / disk->DISK_BLOCK_SIZE;
@@ -438,7 +447,7 @@ int INE5412_FS::fs_write(int inumber, const char *data, int length, int offset)
 	inode.size += bytes_written;
 	// Salva as mudanças do inodo
 	save_inode(inumber, &inode);
-
+	
 	// Se já escreveu tudo que precisava
 	if (bytes_written == length) return bytes_written; 
 	// Se não escreveu tudo ainda e o ponteiro indireto ainda não foi criado
@@ -448,24 +457,24 @@ int INE5412_FS::fs_write(int inumber, const char *data, int length, int offset)
 	starting_pointer -= POINTERS_PER_INODE;
 	// Caso seja negativo, ambos valores são 0
 	if (starting_pointer < 0) starting_pointer = 0;
-
+	
 	// Lê os ponteiros indiretos
 	disk->read(inode.indirect, indirect_block.data);
-
+	
 	// Em que blocos escreveu "data" (apontados pelos ponteiros indiretos)
 	written_blocks = write_in_pointers(&bytes_written, length, starting_pointer, POINTERS_PER_BLOCK, indirect_block.pointers, data);
-
+	
 	// i: Ponteiros em "written_blocks"
 	// inode.direct[written_blocks[i]] = written_blocks[i+1]
 	// Ponteiro direto (índice i)     || bloco (índice i+1)
 	for (int i = 0; i < (int) written_blocks.size(); i+=2) indirect_block.pointers[written_blocks[i]] = written_blocks[i+1];
-
+	
 	inode.size += bytes_written;
 	// Salva as mudanças do inodo
 	save_inode(inumber, &inode);
 
 	// Salva as mudanças no disco
 	disk->write(inode.indirect, indirect_block.data);
-
+	
 	return bytes_written;
 }
